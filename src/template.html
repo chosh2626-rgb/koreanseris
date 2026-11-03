@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026 한국시리즈 KT vs 삼성 시뮬레이터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* 레이아웃: 위에서 아래로 '요약 → 차전별 → 경기 상세 → 근거' 순. 전광판(보드) 톤은 스코어 표에만 사용 */
+:root {
+  --bg: #eef0f3;
+  --surface: #ffffff;
+  --ink: #121722;
+  --muted: #5a6373;
+  --line: #d9dde4;
+  --kt: #d4001f;
+  --kt-soft: #fbe5e8;
+  --ss: #0b4fa3;
+  --ss-soft: #e3ecf8;
+  --board: #13261e;
+  --board-ink: #f2f5ef;
+  --board-dim: #8fa69a;
+  --amber: #e9a400;
+  --tie: #8a8f99;
+  --font-display: "Black Han Sans", "Noto Sans KR", sans-serif;
+  --font-body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --surface: #161b24; --ink: #e8ebf1; --muted: #9aa3b2; --line: #2a3140;
+    --kt: #ff4d61; --kt-soft: #3a1820; --ss: #5b9bf0; --ss-soft: #14243b;
+    --board: #0a1a13; --board-ink: #eef3ec; --board-dim: #7f988b; --tie: #8a8f99;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --surface: #161b24; --ink: #e8ebf1; --muted: #9aa3b2; --line: #2a3140;
+  --kt: #ff4d61; --kt-soft: #3a1820; --ss: #5b9bf0; --ss-soft: #14243b;
+  --board: #0a1a13; --board-ink: #eef3ec; --board-dim: #7f988b; --tie: #8a8f99;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 64px; display: grid; gap: 28px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(28px, 4.4vw, 44px); line-height: 1.15; letter-spacing: .01em; }
+h2 { font-size: 21px; font-weight: 900; }
+h3 { font-size: 16px; font-weight: 700; }
+p { margin: 0; }
+.num, table { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.kt { color: var(--kt); } .ss { color: var(--ss); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+.sec-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 14px; }
+.eyebrow { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
+
+/* 헤더 */
+header.top { display: grid; gap: 10px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); white-space: nowrap; }
+.chip.warn { border-color: var(--amber); color: var(--ink); }
+.chip.kt { border-color: var(--kt); color: var(--kt); background: var(--kt-soft); }
+.chip.ss { border-color: var(--ss); color: var(--ss); background: var(--ss-soft); }
+
+/* 시리즈 요약 */
+.verdict { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; }
+@media (max-width: 860px) { .verdict { grid-template-columns: 1fr; } }
+.split { display: grid; gap: 10px; }
+.split-nums { display: flex; justify-content: space-between; align-items: flex-end; }
+.split-nums .big { font-family: var(--font-display); font-size: clamp(40px, 7vw, 64px); line-height: 1; }
+.split-nums .lbl { font-weight: 700; font-size: 14px; }
+.splitbar { display: flex; height: 16px; border-radius: 4px; overflow: hidden; background: var(--line); }
+.splitbar span { display: block; height: 100%; }
+.combo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 520px) { .combo { grid-template-columns: 1fr; } }
+.combo h3 { margin-bottom: 6px; }
+.crow { display: grid; grid-template-columns: 78px 1fr 46px; align-items: center; gap: 8px; font-size: 13.5px; padding: 3px 0; }
+.cbar { height: 10px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.cbar i { display: block; height: 100%; }
+.lens { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.lens .chip b { color: var(--ink); }
+.pathline { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.pathline .pg { font-size: 12.5px; border-radius: 6px; padding: 3px 8px; font-weight: 700; border: 1px solid transparent; }
+.pg.kt { background: var(--kt-soft); color: var(--kt); }
+.pg.ss { background: var(--ss-soft); color: var(--ss); }
+.pg.tie { background: var(--line); color: var(--muted); }
+.pg.ghost { opacity: .45; }
+
+/* 차전 카드 */
+.games { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.gcard { text-align: left; font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 8px; cursor: pointer; position: relative; }
+.gcard:hover { border-color: var(--muted); }
+.gcard:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+.gcard.sel { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.gcard .gt { display: flex; justify-content: space-between; gap: 6px; font-size: 13px; }
+.gcard .gt b { font-size: 15px; }
+.gcard .vs { font-size: 13px; }
+.gcard .sc { font-family: var(--font-display); font-size: 26px; line-height: 1; display: flex; gap: 8px; align-items: baseline; }
+.gcard .sc small { font-family: var(--font-body); font-size: 12px; color: var(--muted); }
+.gcard.ghost { opacity: .72; border-style: dashed; }
+.wp { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--line); }
+.wp span { display: block; height: 100%; }
+.stripe { position: absolute; left: 0; top: 10px; bottom: 10px; width: 4px; border-radius: 0 3px 3px 0; }
+
+/* 컨트롤 */
+.controls { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; }
+.field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); font-weight: 500; }
+.field input, .field select { font: inherit; font-size: 15px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; min-width: 120px; }
+.field input[type=number] { width: 90px; min-width: 0; font-weight: 700; }
+.btn { font: inherit; font-size: 14px; font-weight: 700; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--ink); background: var(--ink); color: var(--surface); cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--ink); }
+.btn:hover { opacity: .88; }
+.stepper { display: flex; gap: 4px; }
+.stepper button { font: inherit; font-weight: 700; width: 34px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 6px; cursor: pointer; }
+
+/* 전광판 */
+.board { background: var(--board); color: var(--board-ink); border-radius: 10px; padding: 16px; overflow-x: auto; }
+.board table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 16px; }
+.board th, .board td { padding: 6px 6px; text-align: center; }
+.board thead th { color: var(--board-dim); font-weight: 500; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,.12); }
+.board td.team { text-align: left; font-weight: 700; white-space: nowrap; padding-right: 14px; }
+.board td.rhe { font-weight: 900; color: var(--amber); }
+.board td.zero { color: var(--board-dim); }
+.board .sep { border-left: 1px solid rgba(255,255,255,.15); }
+.dec { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 10px; font-size: 13.5px; color: var(--board-dim); }
+.dec b { color: var(--board-ink); }
+
+.gamehead { display: grid; gap: 6px; }
+.gamehead .ttl { font-family: var(--font-display); font-size: clamp(22px, 3.2vw, 30px); line-height: 1.2; }
+.twocol { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 960px) { .twocol { grid-template-columns: 1fr; } }
+.stack { display: grid; gap: 20px; }
+.stack > *, .twocol > *, .verdict > * { min-width: 0; }
+
+/* 이닝 로그 */
+.innings { display: grid; gap: 10px; }
+.inn { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.inn-h { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 7px 12px; font-size: 13.5px; font-weight: 700; border-left: 5px solid var(--line); background: color-mix(in srgb, var(--line) 35%, var(--surface)); }
+.inn-h.kt { border-left-color: var(--kt); }
+.inn-h.ss { border-left-color: var(--ss); }
+.inn-h .r { font-weight: 900; }
+.inn ol { list-style: none; margin: 0; padding: 4px 0; }
+.inn li { display: grid; grid-template-columns: 74px 1fr auto; gap: 8px; padding: 3px 12px; font-size: 13.5px; align-items: baseline; }
+.inn li .who { font-weight: 700; }
+.inn li .sit { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.inn li.scored { background: color-mix(in srgb, var(--amber) 14%, transparent); }
+.inn li.scored .what b { font-weight: 900; }
+.inn li.note { grid-template-columns: 1fr; color: var(--muted); font-size: 12.5px; font-style: normal; }
+.inn li.chg { grid-template-columns: 1fr; font-size: 12.5px; font-weight: 700; color: var(--ink); background: color-mix(in srgb, var(--muted) 12%, transparent); }
+@media (max-width: 520px) { .inn li { grid-template-columns: 62px 1fr; } .inn li .sit { grid-column: 2; } }
+
+/* 표 */
+.tbl { overflow-x: auto; }
+table.st { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+table.st th, table.st td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+table.st th { color: var(--muted); font-weight: 500; font-size: 12.5px; }
+table.st th:first-child, table.st td:first-child { text-align: left; }
+table.st td.l { text-align: left; }
+table.st tr.hl td { font-weight: 700; }
+.mini { display: inline-block; height: 8px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+.tabs button { font: inherit; font-size: 13px; font-weight: 700; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+.tabs button[aria-pressed="true"] { color: var(--surface); background: var(--ink); border-color: var(--ink); }
+
+.scen { display: grid; gap: 8px; font-size: 13.5px; }
+.scen .row { display: grid; grid-template-columns: 92px 1fr; gap: 8px; }
+.scen .row b { font-size: 12.5px; }
+.pen { display: flex; flex-wrap: wrap; gap: 6px; }
+.pen .chip.off { text-decoration: line-through; opacity: .6; }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.fact { border-top: 3px solid var(--line); padding-top: 10px; display: grid; gap: 4px; }
+.fact.kt { border-top-color: var(--kt); } .fact.ss { border-top-color: var(--ss); }
+.fact .v { font-weight: 900; font-size: 17px; }
+.voices { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.voice { border-left: 3px solid var(--line); padding: 2px 0 2px 12px; display: grid; gap: 4px; font-size: 14px; }
+.voice.kt { border-left-color: var(--kt); } .voice.ss { border-left-color: var(--ss); }
+.voice .src { font-size: 12px; color: var(--muted); }
+ul.plain { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+.sources { columns: 2 320px; font-size: 13px; }
+.sources a { color: var(--ss); }
+.loading { padding: 30px; text-align: center; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { .gcard { transition: border-color .15s; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">2026 신한 SOL KBO 한국시리즈 · 7전 4선승제 · KT(정규 1위) vs 삼성(PO 승자)</div>
+  <h1><span class="kt">KT 위즈</span> vs <span class="ss">삼성 라이온즈</span>, 누가 우승할까</h1>
+  <p class="muted">11월 3일(화) 1차전 직전 공개 정보 기준. 선수별 타석 단위 몬테카를로 시뮬레이션으로 차전별 800경기, 시리즈 40,000회를 돌린 예측 모델입니다. 실제 경기 결과가 아닙니다.</p>
+  <div class="meta">
+    <span class="chip">1차전 11/3 18:30 수원</span>
+    <span class="chip">정규시즌 상대전적 삼성 9승 7패</span>
+    <span class="chip warn">삼성 마무리 김재윤(35세이브) 부상 이탈</span>
+    <span class="chip">최대 7차전 (무승부 없이 연장 승부로 가정)</span>
+  </div>
+</header>
+
+<section class="card" aria-labelledby="h-series">
+  <div class="sec-head"><h2 id="h-series">시리즈 전망: 우승 확률과 경우의 수</h2><span class="muted small" id="series-note"></span></div>
+  <div class="verdict">
+    <div class="split">
+      <div class="split-nums">
+        <div><div class="lbl kt">KT 우승</div><div class="big kt num" id="p-kt">–</div></div>
+        <div style="text-align:right"><div class="lbl ss">삼성 우승</div><div class="big ss num" id="p-ss">–</div></div>
+      </div>
+      <div class="splitbar" id="splitbar"></div>
+      <p id="verdict-text"></p>
+      <div>
+        <div class="eyebrow" style="margin-top:6px">모델 예상 경로 (차전별 우세 팀 기준)</div>
+        <div class="pathline" id="pathline"></div>
+      </div>
+      <div class="lens" id="lens"></div>
+    </div>
+    <div class="combo" id="combo"></div>
+  </div>
+</section>
+
+<section aria-labelledby="h-games">
+  <div class="sec-head"><h2 id="h-games">차전별 예상</h2><span class="muted small">카드를 누르면 아래에서 1회~9회 상세 전개를 봅니다 (최대 7차전)</span></div>
+  <div class="games" id="games"></div>
+</section>
+
+<section class="card" aria-labelledby="h-sim" id="sim">
+  <div class="sec-head"><h2 id="h-sim">경기 시뮬레이터: 차전을 입력하세요</h2></div>
+  <form class="controls" id="ctl" autocomplete="off">
+    <div class="field"><label for="gameNo">차전 (1~7)</label>
+      <div class="stepper"><button type="button" id="gPrev" aria-label="이전 차전">−</button><input type="number" id="gameNo" min="1" max="7" value="1"><button type="button" id="gNext" aria-label="다음 차전">+</button></div></div>
+    <div class="field"><label for="selKT">KT 선발</label><select id="selKT"></select></div>
+    <div class="field"><label for="selSS">삼성 선발</label><select id="selSS"></select></div>
+    <button class="btn" type="submit" id="apply">이 선발로 다시 계산</button>
+    <button class="btn ghost" type="button" id="reroll">다른 전개 보기</button>
+    <button class="btn ghost" type="button" id="reset">기본 설정으로</button>
+  </form>
+  <p class="muted small" style="margin-top:8px">선발을 바꾸면 해당 차전과 이후 차전의 투수 피로·휴식일이 다시 계산됩니다. ‘다른 전개 보기’는 같은 조건에서 나올 수 있는 다른 한 경기를 보여줍니다.</p>
+  <div id="game" style="margin-top:18px"><div class="loading">시뮬레이션 계산 중…</div></div>
+</section>
+
+<section class="card" aria-labelledby="h-facts">
+  <div class="sec-head"><h2 id="h-facts">모델에 넣은 정보: 정규시즌·가을야구 사실관계</h2></div>
+  <div class="facts">
+    <div class="fact kt"><span class="muted small">KT 정규시즌</span><span class="v">90승 5무 49패 (.647) 1위</span><span class="small">시즌 막판 10연승으로 1위 확정, KS 직행. 팀 타율 1위·팀 평균자책점 2위.</span></div>
+    <div class="fact ss"><span class="muted small">삼성 정규시즌</span><span class="v">83승 3무 58패 (.589) 2위</span><span class="small">PO에서 KIA를 3승 2패로 꺾음. 11월 1일 5차전 6-1, 후라도 7이닝 1실점으로 PO MVP.</span></div>
+    <div class="fact"><span class="muted small">맞대결</span><span class="v">삼성 9승 7패 우위</span><span class="small">올해 KT에 상대전적 우위를 가진 유일한 팀. 단 정규시즌 막판 수원 맞대결은 KT 9-3 승.</span></div>
+    <div class="fact kt"><span class="muted small">KT 마운드</span><span class="v">선발 4인 체제</span><span class="small">대니엘(5승 2패, ERA 2.13, 삼성전 등판 없음) · 고영표(15승 공동 다승왕) · 로건(좌완) · 소형준(승률왕). 마무리 박영현, 홀드왕 스기모토(25홀드).</span></div>
+    <div class="fact ss"><span class="muted small">삼성 마운드</span><span class="v">선발 3인 + 원태인 불펜</span><span class="small">최원태(KT전 2경기 1패, ERA 6.94) · 페덱 · 후라도. 세이브왕 김재윤이 어깨 부위(전거근) 손상으로 빠져 원태인이 뒷문을 맡음.</span></div>
+    <div class="fact"><span class="muted small">일정</span><span class="v">11/3 ~ 최대 11/11</span><span class="small">PO 5차전 여파로 하루씩 순연. 1·2차전 수원, 3~5차전 대구, 6·7차전 수원 (2-3-2).</span></div>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="h-voices">
+  <div class="sec-head"><h2 id="h-voices">감독·전문가 시각과 모델 반영</h2></div>
+  <div class="voices">
+    <div class="voice kt"><b>이강철 KT 감독 (미디어데이)</b><span>긴 휴식 탓에 1차전 초반 타자들의 감각 회복이 더딜 수 있다고 진단. 대니엘이 초반을 무실점으로 막는 것이 중요하다고 했고, 좌완 불펜 약점을 메울 카드는 “1차전에서 보여주겠다”며 숨겼다.</span><span class="src">→ 모델: 1차전 1~3회 KT 타선 소폭 하향, 좌타 상대 오원석·전용주 투입 로직</span></div>
+    <div class="voice ss"><b>박진만 삼성 감독 (미디어데이)</b><span>강한 좌타 라인으로 좌완 불펜이 부족한 KT 투수진을 뚫겠다고 밝힘. 원태인을 PO처럼 불펜으로 쓰며, 시리즈 마지막 순간을 원태인이 장식하길 바란다고 했다.</span><span class="src">→ 모델: 삼성 좌타 6명 배치, 우투수 상대 좌타 보정, 원태인 마무리·멀티이닝</span></div>
+    <div class="voice"><b>뉴데일리 분석</b><span>휴식과 선수층 면에서 KT가 유리하지만, 삼성의 상대전적 우위와 PO 상승세 때문에 쉽게 예단하기 어렵다고 평가.</span><span class="src">→ 모델: 1~2차전 삼성 불펜 피로 보정, 상대 전적은 개별 매치업(최원태 KT전 약세 등)으로 반영</span></div>
+    <div class="voice"><b>뉴스1 프리뷰</b><span>‘투타 안정감’의 KT와 ‘가을 기세’의 삼성의 대결로 규정하고, 원태인 활용법을 최대 변수로 꼽음.</span><span class="src">→ 모델: 6차전 이후·탈락 위기 경기는 ‘총력전’(선발 불펜 투입, 빠른 교체)</span></div>
+  </div>
+  <div style="margin-top:16px">
+    <h3 style="margin-bottom:6px">이 모델의 한계</h3>
+    <ul class="plain muted">
+      <li>선수 능력치는 공개된 시즌 성적과 보도를 바탕으로 한 추정치입니다. 공식 세부 기록(타석별 비율)을 그대로 쓴 것이 아닙니다.</li>
+      <li>라인업은 PO에서 가장 자주 쓴 형태로 고정했고, 대타·대주자·수비 교체와 부상은 반영하지 않았습니다.</li>
+      <li>‘예상 점수’는 800경기 중 우세 팀이 이긴 경기의 최빈 스코어이고, 1~9회 전개는 그 스코어로 끝난 대표 경기 하나입니다.</li>
+      <li>시리즈가 7차전 안에 끝나도록 무승부는 두지 않고, 동점이면 승부가 날 때까지 연장전을 치르는 것으로 가정했습니다.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="h-src">
+  <div class="sec-head"><h2 id="h-src">출처</h2></div>
+  <div class="sources">
+    <ul class="plain">
+      <li><a href="https://www.newdaily.co.kr/site/data/html/2026/11/02/2026110200057.html">뉴데일리 · kt VS 삼성, 2026년 맞대결서 삼성이 강했다</a></li>
+      <li><a href="https://www.news1.kr/sports/baseball/6339904">뉴스1 · KT 대니엘 vs 삼성 최원태, 1차전 선발 맞대결</a></li>
+      <li><a href="https://www.news1.kr/sports/baseball/6339571">뉴스1 · ‘투타 안정감’ KT냐, ‘가을 기세’ 삼성이냐</a></li>
+      <li><a href="https://www.topstarnews.net/news/articleView.html?idxno=16266260">톱스타뉴스 · 한국시리즈 미디어데이</a></li>
+      <li><a href="https://www.kbmaeil.com/article/20261101500592">경북매일 · 삼성, KIA 꺾고 한국시리즈 진출 (PO 5차전)</a></li>
+      <li><a href="https://www.xportsnews.com/article/2211016">엑스포츠뉴스 · PO 엔트리, 김재윤 낙마</a></li>
+      <li><a href="https://www.starnewskorea.com/sports/2026/10/24/2026102417530081672">스타뉴스 · 35세이브 김재윤 엔트리 제외, 구자욱 합류</a></li>
+      <li><a href="https://www.xportsnews.com/article/2213749">엑스포츠뉴스 · 페덱 PO 4차전 99구 역투</a></li>
+      <li><a href="https://www.imaeil.com/page/view/2026103009523328555">매일신문 · 원태인 불펜 승부수 (PO 3차전)</a></li>
+      <li><a href="https://www.osen.co.kr/article/G1112901615">OSEN · 한국시리즈 일정 하루씩 순연</a></li>
+      <li><a href="https://www.xportsnews.com/article/2206892">엑스포츠뉴스 · 2026 개인 타이틀 확정 (고영표 다승, 소형준 승률, 스기모토 홀드)</a></li>
+      <li><a href="https://isplus.com/article/view/isp202610110135">일간스포츠 · 고영표 시즌 15승</a></li>
+      <li><a href="https://isplus.com/article/view/isp202610070245">일간스포츠 · 정규시즌 막판 KT 9-3 삼성, 최원준 204안타</a></li>
+      <li><a href="https://isplus.com/article/view/isp202608020105">일간스포츠 · KT 새 외국인 대니엘</a></li>
+      <li><a href="https://www.mt.co.kr/sports/2026/09/07/2026090710555812543">머니투데이 · 구자욱 타율 .361 수위</a></li>
+      <li><a href="https://isplus.com/article/view/isp202610010024">일간스포츠 · 구자욱 햄스트링 부상</a></li>
+      <li><a href="https://v.daum.net/v/1Nz1AKKpYu">엑스포츠뉴스 · 삼성, KT에 더는 약하지 않다 (최원태 KT전)</a></li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<script>
+/*__ENGINE__*/
+</script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const WD = ['일', '월', '화', '수', '목', '금', '토'];
+  const fmtDate = d => { const x = new Date(d + 'T00:00:00Z'); return `${x.getUTCMonth() + 1}월 ${x.getUTCDate()}일(${WD[x.getUTCDay()]})`; };
+  const shortDate = d => { const x = new Date(d + 'T00:00:00Z'); return `${x.getUTCMonth() + 1}/${x.getUTCDate()}(${WD[x.getUTCDay()]})`; };
+  const pct = (x, d = 1) => (x * 100).toFixed(d) + '%';
+  const ip = o => Math.floor(o / 3) + ['', '⅓', '⅔'][o % 3];
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const TN = { kt: 'KT', ss: '삼성' };
+  const parkShort = p => p.startsWith('수원') ? '수원' : '대구';
+
+  const state = { overrides: {}, reroll: {}, sel: 1, path: null, tab: { pit: 'kt', bat: 'kt', exp: 'kt', pen: 'kt' } };
+
+  const KT_SP = ['대니엘', '고영표', '로건', '소형준', '오원석', '배제성'];
+  const SS_SP = ['최원태', '페덱', '후라도', '원태인', '양창섭'];
+  $('selKT').innerHTML = KT_SP.map(n => `<option>${n}</option>`).join('');
+  $('selSS').innerHTML = SS_SP.map(n => `<option>${n}</option>`).join('');
+
+  function compute() {
+    state.path = buildPath({ overrides: state.overrides, reroll: state.reroll, N: 800 });
+  }
+
+  /* ---------- 시리즈 요약 ---------- */
+  function renderSeries() {
+    const s = state.path.series, M = s.M;
+    const pk = s.kt / M, ps = s.ss / M;
+    $('p-kt').textContent = pct(pk);
+    $('p-ss').textContent = pct(ps);
+    $('splitbar').innerHTML = `<span style="width:${pk * 100}%;background:var(--kt)"></span><span style="width:${ps * 100}%;background:var(--ss)"></span>`;
+    // 경우의 수
+    const agg = { kt: [0, 0, 0, 0], ss: [0, 0, 0, 0] }; let tieSeries = 0;
+    for (const [k, v] of Object.entries(s.combos)) {
+      const [t, rec] = k.split('|'); const parts = rec.split('-').map(Number);
+      agg[t][parts[1]] += v; if (parts[2]) tieSeries += v;
+    }
+    const all = [];
+    ['kt', 'ss'].forEach(t => agg[t].forEach((v, l) => all.push({ t, l, v })));
+    const mx = Math.max(...all.map(x => x.v));
+    const top = all.slice().sort((a, b) => b.v - a.v)[0];
+    $('combo').innerHTML = ['kt', 'ss'].map(t => `<div><h3 class="${t}">${TN[t]} 우승 시나리오</h3>${agg[t].map((v, l) =>
+      `<div class="crow"><span>4승 ${l}패</span><span class="cbar"><i style="width:${v / mx * 100}%;background:var(--${t})"></i></span><span class="num" style="text-align:right">${pct(v / M)}</span></div>`).join('')}</div>`).join('') +
+      `<p class="small muted" style="grid-column:1/-1">가장 가능성 높은 단일 결과: <b class="${top.t}">${TN[top.t]} 4승 ${top.l}패</b> (${pct(top.v / M)}).</p>`;
+    const L = s.length;
+    const lenTxt = [4, 5, 6, 7].map(n => `<span class="chip">${n}차전 종료 <b>${pct((L[n] || 0) / M)}</b></span>`).join('');
+    $('lens').innerHTML = lenTxt;
+    const fav = pk >= ps ? 'kt' : 'ss';
+    const gap = Math.abs(pk - ps);
+    const strength = gap > .25 ? '뚜렷한 우세' : gap > .1 ? '우세' : '근소한 우세';
+    $('verdict-text').innerHTML = `모델 결론: <b class="${fav}">${TN[fav]} ${strength}</b>. ` +
+      (fav === 'kt' ? 'KT는 4선발 로테이션과 휴식, 홈 4경기, 박영현·스기모토로 이어지는 뒷문이 강점이고, 삼성은 후라도 등판 경기와 대구 3연전의 장타력에서 반격 여지가 큽니다.'
+        : '삼성은 좌타 라인과 대구 장타력, 후라도·페덱의 구위가 강점이고, KT는 휴식과 홈 이점으로 버팁니다.');
+    // 예상 경로
+    const pg = state.path.games;
+    $('pathline').innerHTML = pg.map(g => {
+      const r = g.rep, w = r.winner;
+      const cls = w === 'tie' ? 'tie' : w;
+      const ghost = g.decidedBefore ? ' ghost' : '';
+      return `<span class="pg ${cls}${ghost}" title="${g.G.n}차전">${g.G.n}차전 ${w === 'tie' ? '무' : TN[w]} ${r.score.kt}:${r.score.ss}</span>`;
+    }).join('');
+    const end = pg.find(g => !g.decidedBefore && (g.stateAfter.kt === 4 || g.stateAfter.ss === 4));
+    $('series-note').textContent = end ? `예상 경로상 ${end.G.n}차전에서 ${TN[end.stateAfter.kt === 4 ? 'kt' : 'ss']} 우승 확정 (흐린 칸은 시리즈가 이어질 경우의 가정)` : '';
+  }
+
+  /* ---------- 차전 카드 ---------- */
+  function renderCards() {
+    $('games').innerHTML = state.path.games.map(g => {
+      const m = g.many, N = m.N, r = g.rep;
+      const pk = m.kt / N, ps = m.ss / N, pt = m.tie / N;
+      const w = r.winner;
+      const tag = g.decidedBefore ? '<span class="chip">시리즈 종료 후 가정</span>' : (g.cfg.totalWar ? '<span class="chip">총력전</span>' : '');
+      const st = g.stateAfter;
+      return `<button type="button" class="gcard ${state.sel === g.G.n ? 'sel' : ''} ${g.decidedBefore ? 'ghost' : ''}" data-n="${g.G.n}" aria-label="${g.G.n}차전 상세 보기">
+        <span class="stripe" style="background:var(--${w === 'tie' ? 'tie' : w})"></span>
+        <span class="gt"><b>${g.G.n}차전</b><span class="muted">${shortDate(g.G.date)} · ${parkShort(g.G.park)}</span></span>
+        <span class="vs"><span class="kt">${g.cfg.starters.kt}</span> <span class="muted">vs</span> <span class="ss">${g.cfg.starters.ss}</span></span>
+        <span class="sc"><span class="kt">${r.score.kt}</span><span class="muted">:</span><span class="ss">${r.score.ss}</span><small>${w === 'tie' ? '무승부' : TN[w] + ' 승'}</small></span>
+        <span class="wp"><span style="width:${pk * 100}%;background:var(--kt)"></span><span style="width:${pt * 100}%;background:var(--tie)"></span><span style="width:${ps * 100}%;background:var(--ss)"></span></span>
+        <span class="small muted num">KT ${pct(pk, 0)} · 삼성 ${pct(ps, 0)}</span>
+        <span class="small">${g.decidedBefore ? '' : `시리즈 KT ${st.kt}–${st.ss} 삼성${st.tie ? ` (${st.tie}무)` : ''}`}</span>
+        ${tag ? `<span>${tag}</span>` : ''}
+      </button>`;
+    }).join('');
+    document.querySelectorAll('.gcard').forEach(b => b.addEventListener('click', () => {
+      select(+b.dataset.n); $('sim').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    }));
+  }
+
+  /* ---------- 경기 상세 ---------- */
+  function linescore(g) {
+    const r = g.rep, home = g.G.home, away = home === 'kt' ? 'ss' : 'kt';
+    const n = Math.max(9, r.line.kt.length, r.line.ss.length);
+    const head = Array.from({ length: n }, (_, i) => `<th>${i + 1}</th>`).join('');
+    const row = t => {
+      const cells = Array.from({ length: n }, (_, i) => { const v = r.line[t][i]; if (v === undefined) return '<td class="zero">–</td>'; return `<td class="${v === 0 ? 'zero' : ''}">${v}</td>`; }).join('');
+      return `<tr><td class="team" style="color:${t === 'kt' ? '#ff6b7d' : '#7fb2ff'}">${TEAMS[t].name}</td>${cells}<td class="rhe sep">${r.score[t]}</td><td class="rhe">${r.hits[t]}</td><td class="rhe">${r.errs[other(t)]}</td></tr>`;
+    };
+    const dec = r.winner === 'tie' ? '<span><b>15회 무승부</b></span>' :
+      `<span>승 <b>${r.W || '-'}</b></span><span>패 <b>${r.L || '-'}</b></span>${r.S ? `<span>세이브 <b>${r.S}</b></span>` : ''}`;
+    return `<div class="board"><table><thead><tr><th style="text-align:left">${g.G.park}</th>${head}<th class="sep">R</th><th>H</th><th>E</th></tr></thead><tbody>${row(away)}${row(home)}</tbody></table><div class="dec">${dec}</div></div>`;
+  }
+
+  const baseTxt = b => { const on = []; if (b[0] === '1') on.push('1'); if (b[1] === '1') on.push('2'); if (b[2] === '1') on.push('3'); if (!on.length) return '주자 없음'; if (on.length === 3) return '만루'; return on.join('·') + '루'; };
+
+  function innLog(g) {
+    const r = g.rep; const blocks = []; let curB = null;
+    for (const e of r.log) {
+      if (e.type === 'half') {
+        curB = { e, items: [], runs: 0 }; blocks.push(curB);
+      } else if (curB) {
+        if (e.type === 'pa') curB.runs += e.runs;
+        curB.items.push(e);
+      }
+    }
+    return `<div class="innings">${blocks.map(b => {
+      const t = b.e.batTeam, fld = other(t);
+      const items = b.items.map(e => {
+        if (e.type === 'chg') return `<li class="chg">⟳ ${esc(e.text)}</li>`;
+        if (e.type === 'ev') return `<li class="note">${esc(e.text)}</li>`;
+        const sit = e.outs >= 3 ? '이닝 종료' : `${e.outs}사 ${baseTxt(e.bases)}`;
+        const runTxt = e.runs ? ` <b>+${e.runs}점</b> <span class="muted">(KT ${e.score.kt}:${e.score.ss} 삼성)</span>` : '';
+        return `<li class="${e.runs ? 'scored' : ''}"><span class="who">${esc(e.batter)}</span><span class="what">${esc(e.text)}${runTxt}</span><span class="sit">${sit}</span></li>`;
+      }).join('');
+      return `<div class="inn"><div class="inn-h ${t}"><span>${b.e.inn}회${b.e.half === 'top' ? '초' : '말'} · ${TN[t]} 공격 <span class="muted">/ 투수 ${esc(b.e.pitcher)} (${TN[fld]})</span></span><span class="r">${b.runs}점</span></div><ol>${items}</ol></div>`;
+    }).join('')}</div>`;
+  }
+
+  function tabs(key, id) {
+    return `<div class="tabs" role="group" aria-label="팀 선택">${['kt', 'ss'].map(t => `<button type="button" data-tab="${key}" data-t="${t}" aria-pressed="${state.tab[key] === t}">${TEAMS[t].name}</button>`).join('')}</div><div id="${id}"></div>`;
+  }
+
+  function pitTable(g, t) {
+    const rows = g.rep.apps[t].map(a => `<tr><td>${a.name}</td><td class="l muted">${a.role}</td><td>${ip(a.outs)}</td><td>${a.pitches}</td><td>${a.h}</td><td>${a.r}</td><td>${a.bb}</td><td>${a.k}</td><td>${a.hr}</td></tr>`).join('');
+    return `<div class="tbl"><table class="st"><thead><tr><th>투수</th><th style="text-align:left">역할</th><th>이닝</th><th>투구</th><th>피안타</th><th>실점</th><th>4사구</th><th>삼진</th><th>피홈런</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  function batTable(g, t) {
+    const rows = TEAMS[t].lineup.map((b, i) => { const s = g.rep.bat[t][b.name]; return `<tr class="${s.h >= 2 || s.hr ? 'hl' : ''}"><td>${i + 1}. ${b.name} <span class="muted small">${b.pos}·${b.hand === 'L' ? '좌' : '우'}</span></td><td>${s.ab}</td><td>${s.h}</td><td>${s.hr}</td><td>${s.rbi}</td><td>${s.r}</td><td>${s.bb}</td><td>${s.k}</td></tr>`; }).join('');
+    return `<div class="tbl"><table class="st"><thead><tr><th>타자</th><th>타수</th><th>안타</th><th>홈런</th><th>타점</th><th>득점</th><th>4사구</th><th>삼진</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  function expBat(g, t) {
+    const N = g.many.N;
+    const rows = TEAMS[t].lineup.map((b, i) => { const s = g.many.bat[t][b.name]; return `<tr><td>${i + 1}. ${b.name}</td><td>${(s.h / N).toFixed(2)}</td><td>${pct(s.multi / N, 0)}</td><td>${pct(s.hrG / N, 0)}</td><td>${(s.rbi / N).toFixed(2)}</td><td class="l muted small">${b.note}</td></tr>`; }).join('');
+    return `<div class="tbl"><table class="st"><thead><tr><th>타자</th><th>기대 안타</th><th>멀티히트</th><th>홈런 확률</th><th>기대 타점</th><th style="text-align:left">비고</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  function penTable(g, t) {
+    const N = g.many.N, P = g.many.pit[t];
+    const rows = Object.entries(P).sort((a, b) => (b[1].start - a[1].start) || (b[1].app - a[1].app)).map(([n, o]) => {
+      const innMode = Object.entries(o.inn).sort((a, b) => b[1] - a[1])[0][0];
+      const roleMode = Object.entries(o.roles).sort((a, b) => b[1] - a[1])[0][0];
+      const w = o.app / N;
+      return `<tr class="${o.start ? 'hl' : ''}"><td>${n}</td><td class="l"><span class="mini" style="width:${Math.max(2, w * 60)}px;background:var(--${t})"></span>${pct(w, 0)}</td><td>${o.start ? '1회' : innMode + '회'}</td><td class="l muted">${roleMode}</td><td>${ip(Math.round(o.outs / o.app))}</td><td>${(o.r / o.app).toFixed(2)}</td><td>${pct(o.W / N, 0)}</td><td>${o.S ? pct(o.S / N, 0) : '–'}</td></tr>`;
+    }).join('');
+    return `<div class="tbl"><table class="st"><thead><tr><th>투수</th><th style="text-align:left">등판 확률</th><th>주 등판</th><th style="text-align:left">주 역할</th><th>평균 이닝</th><th>평균 실점</th><th>승리</th><th>세이브</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+
+  function penScenario(g, t) {
+    const R = TEAMS[t].roles, U = g.cfg.usageSnap, day = g.cfg.day;
+    const avail = n => relieverAvailable(U, t, n, day);
+    const pool = [...new Set([R.closer, ...R.setup, ...R.lefty, ...R.middle, ...R.long])];
+    const chips = pool.map(n => `<span class="chip ${avail(n) ? t : 'off'}" title="${avail(n) ? '등판 가능' : '연투·투구수 제한으로 휴식'}">${n}</span>`).join('');
+    const f = arr => arr.find(avail) || '대체 투수';
+    const opp = other(t);
+    const lefties = TEAMS[opp].lineup.filter(b => b.hand === 'L').map(b => b.name);
+    let lead, tie, behind;
+    if (t === 'kt') {
+      lead = `7회 ${f(R.setup.slice(1))} (삼성 좌타 연속이면 ${f(R.lefty)}) → 8회 ${f(R.setup)} → 9회 ${avail(R.closer) ? R.closer : f(R.setup) + ' (박영현 휴식)'}`;
+      tie = `홈 경기 9회 동점이면 ${avail(R.closer) ? '박영현' : f(R.setup)}, 원정이면 ${f(R.setup)} 먼저 → 연장 박영현${g.cfg.totalWar ? ' · 총력전: 고영표/소형준 등 휴식 2일 이상 선발 불펜 대기' : ''}`;
+      behind = `1~2점 차: ${f(R.middle)} → ${f(R.setup.slice(1))}로 추격 유지 / 4점 차 이상: ${f(R.long)}`;
+    } else {
+      lead = `7회 ${f(R.lefty)} (KT 좌타 ${TEAMS.kt.lineup.filter(b => b.hand === 'L').slice(0, 3).map(b => b.name).join('·')} 상대) → 8회 ${f(['김태훈', ...R.setup])} → 9회 ${avail(R.closer) ? '원태인' : f(R.setup) + ' (원태인 휴식)'}${g.cfg.totalWar ? ' · 총력전: 1~2점 리드면 8회부터 원태인 멀티이닝' : ''}`;
+      tie = `9회 동점: 홈이면 원태인, 원정이면 ${f(R.setup)} → 연장 원태인${g.cfg.totalWar ? ' · 휴식 2일 이상인 페덱/후라도 불펜 대기' : ''}`;
+      behind = `1~2점 차: ${f(R.middle)} → ${f(R.setup.slice(1))} / 4점 차 이상: ${f(R.long)} 롱릴리프`;
+    }
+    return `<div class="scen"><div class="pen">${chips}</div>
+      <div class="row"><b>${TN[t]} 리드 1~3점</b><span>${lead}</span></div>
+      <div class="row"><b>동점</b><span>${tie}</span></div>
+      <div class="row"><b>열세</b><span>${behind}</span></div>
+      <p class="small muted">줄 그어진 이름은 직전 경기 투구수(30구 이상)·연투 규칙으로 이 차전 휴식으로 본 투수입니다. 상대 좌타자: ${lefties.join(', ')}.</p></div>`;
+  }
+
+  function renderGame() {
+    const g = state.path.games[state.sel - 1];
+    const m = g.many, N = m.N, r = g.rep;
+    $('gameNo').value = state.sel;
+    $('selKT').value = g.cfg.starters.kt;
+    $('selSS').value = g.cfg.starters.ss;
+    const scores = Object.entries(m.scores).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => { const [a, b] = k.split('-'); return `<span class="chip ${+a > +b ? 'kt' : +a < +b ? 'ss' : ''}">KT ${a}:${b} 삼성 <b>${pct(v / N, 1)}</b></span>`; }).join('');
+    const sb = g.stateBefore;
+    const ctx = [];
+    if (g.decidedBefore) ctx.push('<span class="chip">예상 경로상 이미 우승 확정 후 (시리즈가 이어질 경우 가정)</span>');
+    else ctx.push(`<span class="chip">경기 전 시리즈 KT ${sb.kt}–${sb.ss} 삼성</span>`);
+    if (g.cfg.totalWar) ctx.push('<span class="chip warn">총력전 모드: 선발 조기 교체·선발 불펜 투입 허용</span>');
+    if (g.G.n === 1) ctx.push('<span class="chip">KT 실전 공백(1~3회 타격 보정)</span>');
+    if (g.G.n <= 2) ctx.push('<span class="chip">삼성 PO 5경기 후 불펜 피로</span>');
+    if (g.G.park.startsWith('대구')) ctx.push('<span class="chip">대구: 홈런 +15% 구장 보정</span>');
+    if (state.reroll[g.G.n]) ctx.push('<span class="chip warn">다른 전개 보기 적용 중</span>');
+    const ksp = TEAMS.kt.pitchers[g.cfg.starters.kt], ssp = TEAMS.ss.pitchers[g.cfg.starters.ss];
+    const repNote = state.reroll[g.G.n] ? '같은 조건 800경기 중 무작위로 뽑은 한 경기' : '800경기 중 우세 팀 승리 시 최빈 스코어로 끝난 대표 경기';
+    $('game').innerHTML = `
+      <div class="stack">
+        <div class="gamehead">
+          <div class="eyebrow">${fmtDate(g.G.date)} · ${g.G.park} · ${TN[g.G.home]} 홈</div>
+          <div class="ttl">${g.G.n}차전 <span class="kt">${g.cfg.starters.kt}</span> vs <span class="ss">${g.cfg.starters.ss}</span></div>
+          <div class="small muted">${ksp.note || ''} / ${ssp.note || ''}</div>
+          <div class="meta">${ctx.join('')}</div>
+        </div>
+        ${linescore(g)}
+        <div class="card" style="padding:14px 16px">
+          <div class="sec-head" style="margin-bottom:8px"><h3>이 경기 경우의 수 (800경기)</h3><span class="small muted num">KT 승 ${pct(m.kt / N)} · 삼성 승 ${pct(m.ss / N)} · 평균 득점 KT ${(m.runs.kt / N).toFixed(1)} / 삼성 ${(m.runs.ss / N).toFixed(1)}</span></div>
+          <div class="meta">${scores}</div>
+        </div>
+        <div class="twocol">
+          <div>
+            <div class="sec-head"><h3>1회~${r.line.kt.length > 9 || r.line.ss.length > 9 ? '연장' : '9회'} 예상 전개</h3><span class="small muted">${repNote}</span></div>
+            ${innLog(g)}
+          </div>
+          <div class="stack">
+            <div><h3 style="margin-bottom:8px">불펜·마무리 운용 시나리오</h3>${tabs('pen', 'penBox')}</div>
+            <div><h3 style="margin-bottom:8px">투수 기용 확률 (800경기)</h3>${tabs('exp', 'expBox')}</div>
+            <div><h3 style="margin-bottom:8px">타자 예상 활약 (800경기 평균)</h3>${tabs('bat', 'batBox')}</div>
+            <div><h3 style="margin-bottom:8px">대표 경기 기록</h3>${tabs('pit', 'pitBox')}</div>
+          </div>
+        </div>
+      </div>`;
+    fillTabs(g);
+    document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { state.tab[b.dataset.tab] = b.dataset.t; fillTabs(g); }));
+    document.querySelectorAll('.gcard').forEach(b => b.classList.toggle('sel', +b.dataset.n === state.sel));
+  }
+  function fillTabs(g) {
+    $('penBox').innerHTML = penScenario(g, state.tab.pen);
+    $('expBox').innerHTML = penTable(g, state.tab.exp);
+    $('batBox').innerHTML = expBat(g, state.tab.bat);
+    $('pitBox').innerHTML = pitTable(g, state.tab.pit) + '<div style="height:10px"></div>' + batTable(g, state.tab.pit);
+    document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-pressed', String(state.tab[b.dataset.tab] === b.dataset.t)));
+  }
+
+  function select(n) {
+    n = Math.min(7, Math.max(1, Math.round(n) || 1));
+    state.sel = n; renderGame();
+    try { history.replaceState(null, '', '#game' + n); } catch (e) { }
+  }
+  function rebuild() { compute(); renderSeries(); renderCards(); renderGame(); }
+
+  $('gameNo').addEventListener('change', e => select(+e.target.value));
+  $('gPrev').addEventListener('click', () => select(state.sel - 1));
+  $('gNext').addEventListener('click', () => select(state.sel + 1));
+  $('ctl').addEventListener('submit', e => {
+    e.preventDefault();
+    const n = Math.min(7, Math.max(1, +$('gameNo').value || 1)); state.sel = n;
+    state.overrides[n] = { kt: $('selKT').value, ss: $('selSS').value };
+    rebuild();
+  });
+  $('reroll').addEventListener('click', () => { state.reroll[state.sel] = (state.reroll[state.sel] || 0) + 1; rebuild(); });
+  $('reset').addEventListener('click', () => { delete state.overrides[state.sel]; delete state.reroll[state.sel]; rebuild(); });
+
+  const h = (location.hash || '').match(/^#game([1-7])$/);
+  if (h) state.sel = +h[1];
+  window.addEventListener('hashchange', () => { const m = (location.hash || '').match(/^#game([1-7])$/); if (m && +m[1] !== state.sel) select(+m[1]); });
+  setTimeout(rebuild, 20);
+})();
+</script>
+</body>
+</html>
